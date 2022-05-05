@@ -99,7 +99,4 @@ elif [ "$option2" == "3" ]
 	echo "Stoppping interface..."
 	sudo airmon-ng stop $interfaceMon > /dev/null
 	echo "Done."
-else
-	gnome-terminal --title=newWindow \\ -- bash -c "sudo su"
-
 fi

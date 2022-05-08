@@ -60,34 +60,61 @@ start () {
 		echo ""
 		if [ -f "file" ]
 			then
-			read -p "Load last target? (y/n) " load
+			read -p "Load saved targets? (y/n) " load
 			echo ""
 		fi
 
 	if [ "$load" == "y" ]
 		then
-		ap=$(sed -n 1p file)
-		client=$(sed -n 2p file)
-		channel=$(sed -n 3p file)
+		currentLine=1
+		lines=$(wc -l < file)
 
-		echo "-- Target details -- "
-		echo "AP MAC: "$ap
-		echo "Client MAC: "$client
-		echo "Channel: "$channel
+		targets=$((lines / 4))
+
+		echo "$targets saved targets"
+
+		for i in $(eval echo "{1..$targets}"); do
+			echo ""
+			echo "[Target $i]"
+			echo "Name: $(sed -n $((currentLine))p file)"
+			echo "AP MAC: $(sed -n $((currentLine+1))p file)"
+			echo "Client MAC: $(sed -n $((currentLine+2))p file)"
+		  echo "Channel: $(sed -n $((currentLine+3))p file)"
+		  currentLine=$((currentLine+4))
+		done
+
 		echo ""
+		read -p "Enter target [1-$targets]: " targ
+		targ=$((targ-1))
+		currentLine=$((1+($targ*4)))
+		name=$(sed -n $((currentLine))p file)
+		ap=$(sed -n $((currentLine+1))p file)
+		client=$(sed -n $((currentLine+2))p file)
+		channel=$(sed -n $((currentLine+3))p file)
 
+		echo ""
+		echo "-- Selected target --"
+		echo "Name: $name"
+		echo "AP MAC: $ap"
+		echo "Client MAC: $client"
+	  echo "Channel: $channel"
+	  echo ""
 		read -p "Enter number of requests: " number
 		echo ""
 		deAuth
 	else
 		echo "-- New target --"
-		read -p "Access point Mac address: " ap
-		read -p "Client Mac address (leave empty for every device): " client
-		read -p "How many de-auth request should be sent? " number
+		read -p "Access point MAC address: " ap
+		read -p "Client MAC address (leave empty for every device): " client
 		read -p "Channel: " channel
-		echo ""
+		read -p "Number of de-auth request to send: " number
+		read -p "Save target for later (y/n)?" save
 
-		printf "$ap\n$client\n$channel" > file # save to file
+		if [ "$save" == "y" ]
+			then
+			read -p "Name: " name
+			printf "$name\n$ap\n$client\n$channel\n" >> file # save to file
+		fi
 
 		deAuth
 	fi

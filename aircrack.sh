@@ -2,6 +2,7 @@
 
 # interfaces
 interface=wlp8s0
+filePath=
 # color
 green=`tput setaf 2`
 red=`tput setaf 1`
@@ -20,15 +21,17 @@ showHelp() {
 	echo ""
 	echo "Options:"
 	echo " -i <interface>: Wireless network interface to use. Default is wlp8s0."
+	echo " -f <password file>: Path to password file for cracking network key."
 	echo " -h: show help"
 	echo ""
 	exit
 }
 
-while getopts 'hi:' flag; do
+while getopts 'hf:i:' flag; do
   case "${flag}" in
   	h) showHelp ;;
     i) interface="${OPTARG}" ;;
+	  f) filePath="${OPTARG}" ;;
     *) interface=wlp8s0
   esac
 done
@@ -191,7 +194,13 @@ deAuth () {
 		sudo killall screen
 		echo ""
 		echo "-- Cracking Wi-Fi key --"
-  	sudo aircrack-ng capture-01.cap -w pass.txt
+		if [ "$filePath" = "" ]
+			then
+				echo "${red}ERROR: No password file specified."
+				showHelp
+				exit
+			fi
+  	sudo aircrack-ng capture-01.cap -w $filePath
   fi
 
 	echo ""

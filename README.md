@@ -2,7 +2,7 @@
 A script based on the aircrack-ng package. Used to simplify network penetration testing.
 
 ## Disclaimer
-For educational use only. Do NOT use on networks you don't own or have permissions to test!
+#### For educational use only. Do NOT use on networks you don't own or have permissions to test!
 
 ## Features
  - Scan all nearby networks.

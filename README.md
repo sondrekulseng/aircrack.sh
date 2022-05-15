@@ -26,6 +26,6 @@ Usage: ./aircrack.sh <options>
 
 Options:
  -i <interface>: Wireless network interface to use. Default is wlp8s0.
+ -f <password file>: Path to password file for cracking network key.
  -h: show help
-
  ```

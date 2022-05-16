@@ -119,12 +119,13 @@ start () {
 			name=${line: -22}
 			name=$(echo $name | grep -o '[^\,.]\{4,\}')
 			name=$(echo $name | xargs)
+			security=$(echo $line | grep -o 'WPA2\|WPA3\|OPN\|WEP')
 			if [ "$name" == "" ]; then 
 					# Network name is unknown
 					name="${red}Unknown name${reset}"
 			fi
 			# print
-			echo "[$i] $name (MAC: $mac)"
+			echo "[$i] $name [$security] (MAC: $mac)"
 			i=$((i+1))
 		done < $filename
 		# Choose network
@@ -136,9 +137,11 @@ start () {
 		channel=${res:61:2}
 		name=${res: -22}
 		name=$(echo $name | grep -o '[^\,.]\{4,\}')
+		security=$(echo $res | grep -o 'WPA2\|WPA3\|OPN\|WEP')
 		echo ""
 		echo "-- Selected --"
 		echo "Name: $name"
+		echo "Encryption: $security"
 		echo "Mac: $ap"
 		echo "Channel: $channel"
 		echo ""

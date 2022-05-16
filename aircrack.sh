@@ -80,19 +80,31 @@ start () {
 	echo "[3] Show clients connected to network"
 	echo "[4] Disable monitor mode for $interfaceMon"
 	echo ""
-	read -p 'Select operation: ' option2
+	read -p 'Select operation [1-4]: ' option2
+	echo ""
 
 	if [ "$option2" == "1" ] # auto attack
 		then
 		sudo rm scan-01.* --force > /dev/null
-		echo "Scanning networks for 10 seconds..."
-		screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
+		echo "-- CHOOSE NETWORK BAND --"
+		echo "[1] 2.4 GHz"
+		echo "[2] 5 GHz"
+		echo ""
+		read -p 'Choose network band [1-2]: ' band
+		echo ""
+		if [ "$band" == "1" ]; then
+			echo "Scanning networks on 2.4GHz for 10 seconds..."
+			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
+		else	
+			echo "Scanning networks on 5GHz for 10 seconds..."
+			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon -b a
+		fi	
 		sleep 10s
 		sudo killall screen
 		sed -i '1d' scan-01.csv
 		sed -i '1d' scan-01.csv
 		echo ""
-		echo "-- Choose network --"
+		echo "-- SCAN RESULT --"
 		i=1
 		filename=scan-01.csv
 		while read line; do
@@ -109,20 +121,22 @@ start () {
 			name=$(echo $name | xargs)
 			if [ "$name" == "" ]; then 
 					# Network name is unknown
-					name="Unknown name"
+					name="${red}Unknown name${reset}"
 			fi
 			# print
-			echo "[$i] $name -> $mac"
+			echo "[$i] $name (MAC: $mac)"
 			i=$((i+1))
 		done < $filename
 		# Choose network
 		echo ""
-		read -p 'Choose network: ' network
+		i=$((i-2))
+		read -p "Choose network [1-$i]: " network
 		res=$(sed -n $((network))p scan-01.csv)
 		ap=${res:0:17}
 		channel=${res:61:2}
 		name=${res: -22}
 		name=$(echo $name | grep -o '[^\,.]\{4,\}')
+		echo ""
 		echo "-- Selected --"
 		echo "Name: $name"
 		echo "Mac: $ap"

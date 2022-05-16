@@ -98,20 +98,32 @@ start () {
 		while read line; do
 			stop=$(echo $line | grep "Station MAC" | wc -l)
 			if [ "$stop" == "1" ]; then
+				# no more networks, exit loop
 				break
 			fi
+			# parse CSV file
 			mac=${line:0:17}
 			channel=${line:61:2}
-			name=${line: -19}
-			echo "[$i] $mac -> $name"
+			name=${line: -22}
+			name=$(echo $name | grep -o '[^\,.]\{4,\}')
+			name=$(echo $name | xargs)
+			if [ "$name" == "" ]; then 
+					# Network name is unknown
+					name="Unknown name"
+			fi
+			# print
+			echo "[$i] $name -> $mac"
 			i=$((i+1))
 		done < $filename
-
+		# Choose network
+		echo ""
 		read -p 'Choose network: ' network
 		res=$(sed -n $((network))p scan-01.csv)
 		ap=${res:0:17}
 		channel=${res:61:2}
-		name=${res: -20}
+		name=${res: -22}
+		name=$(echo $name | grep -o '[^\,.]\{4,\}')
+		echo "-- Selected --"
 		echo "Name: $name"
 		echo "Mac: $ap"
 		echo "Channel: $channel"

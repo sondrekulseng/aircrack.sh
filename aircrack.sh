@@ -38,17 +38,27 @@ while getopts 'hf:i:' flag; do
   esac
 done
 
-checkInterface=$(sudo airmon-ng | grep $interface | wc -l)
+# check interface
+checkInterface=$(sudo airmon-ng | grep -w $interface | wc -l)
 
-if [ "$checkInterface" == "0" ]
-	then
+if [ "$checkInterface" == "0" ]; then
+	# interface does not exist
+	# check interface+mon
+	checkInterfaceMon=$(sudo airmon-ng | grep -w "${interface}mon" | wc -l)
+	if [ "$checkInterfaceMon" == "0" ]; then
+		# interface + mon does not exist
 		echo "${red}ERROR: $interface is not a valid network interface!${reset}"
 		showHelp
-	exit	
+		exit	
+	else
+		# append mon to interface
+		interfaceMon="${interface}mon"	
+	fi	
+else
+	# interface exist
+	interfaceMon=$interface
 fi	
 
-# 1 = monitor mode is enabled
-interfaceMon=$interface"mon"
 mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
 
 # Welcome text

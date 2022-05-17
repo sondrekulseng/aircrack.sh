@@ -8,6 +8,7 @@ green=`tput setaf 2`
 red=`tput setaf 1`
 yellow=`tput setaf 11`
 reset=`tput sgr0`
+scanTime=10s
 
 # check root permissions
 if [ "$EUID" -ne 0 ]
@@ -92,14 +93,21 @@ start () {
 		echo ""
 		read -p 'Choose network band [1-2]: ' band
 		echo ""
+		read -p 'Enter scan time in seconds (default is 10): ' time
+		echo ""
+
+		if [ "$time" != "" ]; then
+			scanTime="${time}s"
+		fi
+
 		if [ "$band" == "1" ]; then
-			echo "Scanning networks on 2.4GHz for 10 seconds..."
+			echo "Scanning networks on 2.4GHz for $scanTime..."
 			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
 		else	
-			echo "Scanning networks on 5GHz for 10 seconds..."
+			echo "Scanning networks on 5GHz for $scanTime..."
 			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon -b a
-		fi	
-		sleep 10s
+		fi
+		sleep $scanTime
 		sudo killall screen
 		sed -i '1d' scan-01.csv
 		sed -i '1d' scan-01.csv

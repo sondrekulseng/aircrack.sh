@@ -2,7 +2,9 @@
 
 # interfaces
 interface=wlp8s0
+interfaceMon=wlp8s0mon
 filePath=
+mangedMode=
 # color
 green=`tput setaf 2`
 red=`tput setaf 1`
@@ -43,23 +45,26 @@ checkInterface=$(sudo airmon-ng | grep -w $interface | wc -l)
 
 if [ "$checkInterface" == "0" ]; then
 	# interface does not exist
-	# check interface+mon
 	checkInterfaceMon=$(sudo airmon-ng | grep -w "${interface}mon" | wc -l)
 	if [ "$checkInterfaceMon" == "0" ]; then
-		# interface + mon does not exist
+		# interfacemon does not exist
 		echo "${red}ERROR: $interface is not a valid network interface!${reset}"
 		showHelp
 		exit	
 	else
-		# append mon to interface
-		interfaceMon="${interface}mon"	
+		# interfacemon exist
+		mangedMode=1
 	fi	
 else
-	# interface exist
-	interfaceMon=$interface
-fi	
+	# Interface exist. 
+	isMon=$(echo $interface | grep "mon" | wc -l)
 
-mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
+	if [ "$isMon" == "0" ]; then
+		interfaceMon="${interface}mon"	
+	fi
+	# Is it in monitor mode?
+	mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
+fi	
 
 # Welcome text
 figlet "Aircrack"

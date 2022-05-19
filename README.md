@@ -20,12 +20,15 @@ sudo apt install aircrack-ng figlet -y
  ```
  
 ## Usage
-NB! You need root privileges to run the script.
+NB: You need root privileges to run the script!
 ```console
 Usage: ./aircrack.sh <options>
+
+NB: Script requires root privileges!
 
 Options:
  -i <interface>: Wireless network interface to use. Default is wlp8s0.
  -f <password file>: Path to password file for cracking network key.
+ -v: Verbose mode. Print out debug information, must be the last flag.
  -h: show help
  ```

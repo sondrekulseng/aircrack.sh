@@ -296,16 +296,53 @@ start () {
 }
 
 deAuth () {
+	read -p "Try to crack WiFi password (y/n)? " capture
+	echo ""
 
-	# start interface on channel
-	sudo airmon-ng start $interfaceMon $channel > /dev/null
+	if [ "$capture" == "y" ] || [ "$capture" == "Y" ]; then
+		# YES, crack key	
+		if [ "$filePath" == "" ]; then
+			# No password list specified
+			if [ -f rockyou.txt ]; then
+				# rockyou exist
+				echo "${yellow}Using default list rockyou.txt${reset}"
+				echo ""
+				filePath=rockyou.txt
+				sudo airmon-ng start $interfaceMon $channel > /dev/null
+			else
+				# download rockyou.txt
+				read -p "No password list found. Do you want to download one (y/n)? " download
 
-	# if -f flag is specifed ask if password should be cracked
-	if [ "$filePath" != "" ]; then
-			read -p "Try to crack WiFi password (y/n)? " capture
-	else
-			echo "${yellow}NOTE: No password file specified. Run ./aircrack.sh -i <pass_list> to perform key attack.${reset}"
+				if [ "$download" == "y" ] || [ "$download" == "Y" ]; then
+					echo "Downloading password list (rockyou.txt). Please wait..."
+					sudo airmon-ng stop $interfaceMon > /dev/null
+					sleep 5
+					wget https://github.com/praetorian-inc/Hob0Rules/raw/master/wordlists/rockyou.txt.gz > /dev/null
+					gunzip rockyou.txt.gz > /dev/null
+					filePath=rockyou.txt
+					echo "${green}Download completed.${reset}"
+					sudo airmon-ng start $interface $channel > /dev/null
+				else
+					echo ""
+					echo "${yellow}Skipping password cracking...${reset}"
+					sudo airmon-ng start $interfaceMon $channel > /dev/null
+					capture=n
+				fi
 			echo ""
+			fi
+		else
+			if [ -f $filePath ]; then
+				echo "${yellow}Using password list $filePath${reset}"
+				echo ""
+			else
+				echo "${red}$filePath is not a file! Skipping password cracking...${reset}"
+				echo ""
+				capture=n
+			fi
+			sudo airmon-ng start $interfaceMon $channel > /dev/null
+		fi
+	else
+		sudo airmon-ng start $interfaceMon $channel > /dev/null
 	fi
 
 	# default de-auth requests is 1
@@ -346,7 +383,6 @@ deAuth () {
 
 	echo ""
 	read -p "${green}Attack completed. Press any key to continue...${reset}" blah
-
 	start
 }
 

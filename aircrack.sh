@@ -148,14 +148,15 @@ start () {
 		echo "++: OK signal"
 		echo "+: Bad signal"
 		echo ""
-		i=1
+		i=0
 		filename=scan-01.csv
 		while read line; do
-			stop=$(echo $line | grep "Station MAC" | wc -l)
-			if [ "$stop" == "1" ]; then
-				# no more networks, exit loop
+			length=${#line}
+			if [ $length -eq 1 ]; then
+				# EOF, stop parsing and break loop
 				break
 			fi
+			i=$((i+1))
 			# parse CSV file
 			mac=${line:0:17}
 			channel=${line:61:2}
@@ -196,11 +197,9 @@ start () {
 				fi
 				echo "${red}[$i] $name [$security] ($mac) - channel: $channel${reset}"
 			fi	
-			i=$((i+1))
 		done < $filename
 		# Choose network
 		echo ""
-		i=$((i-2))
 		read -p "Choose network [1-$i]: " network
 		res=$(sed -n $((network))p scan-01.csv)
 		ap=${res:0:17}

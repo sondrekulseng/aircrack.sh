@@ -106,8 +106,10 @@ start () {
 	echo "[1] Start network scan"
 	echo "[2] Manuel de-auth attack"
 	echo "[3] Disable monitor mode for $interfaceMon"
+	echo "[4] Show help and exit"
+	echo "[5] Exit"
 	echo ""
-	read -p 'Select operation [1-3]: ' option2
+	read -p 'Select operation [1-5]: ' option2
 	echo ""
 
 	if [ "$option2" == "1" ] # auto attack
@@ -292,6 +294,12 @@ start () {
 		echo "Stoppping interface..."
 		sudo airmon-ng stop $interfaceMon > /dev/null
 		echo "Done."
+	elif [ "$option2" == "4" ]
+		then
+		showHelp
+	else
+		echo "Exiting script. Goodbye!"
+		exit 	
 	fi
 }
 

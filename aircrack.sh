@@ -304,6 +304,8 @@ start () {
 }
 
 deAuth () {
+	sudo airmon-ng start $interfaceMon $channel > /dev/null
+
 	read -p "Try to crack WiFi password (y/n)? " capture
 	echo ""
 
@@ -311,46 +313,26 @@ deAuth () {
 		# YES, crack key	
 		if [ "$filePath" == "" ]; then
 			# No password list specified
-			if [ -f rockyou.txt ]; then
-				# rockyou exist
-				echo "${yellow}Using default list rockyou.txt${reset}"
+			if [ -f wordlists/10k-pass.txt ]; then
+				# Check if default password list exist
+				echo "${yellow}INFO: Using default wordlist (10k passwords). Use the -f flag to specify a custom wordlist.${reset}"
 				echo ""
-				filePath=rockyou.txt
-				sudo airmon-ng start $interfaceMon $channel > /dev/null
+				filePath=wordlists/10k-pass.txt
 			else
-				# download rockyou.txt
-				read -p "No password list found. Do you want to download one (y/n)? " download
-
-				if [ "$download" == "y" ] || [ "$download" == "Y" ]; then
-					echo "Downloading password list (rockyou.txt). Please wait..."
-					sudo airmon-ng stop $interfaceMon > /dev/null
-					sleep 5
-					wget https://github.com/praetorian-inc/Hob0Rules/raw/master/wordlists/rockyou.txt.gz > /dev/null
-					gunzip rockyou.txt.gz > /dev/null
-					filePath=rockyou.txt
-					echo "${green}Download completed.${reset}"
-					sudo airmon-ng start $interface $channel > /dev/null
-				else
-					echo ""
-					echo "${yellow}Skipping password cracking...${reset}"
-					sudo airmon-ng start $interfaceMon $channel > /dev/null
-					capture=n
-				fi
-			echo ""
-			fi
-		else
-			if [ -f $filePath ]; then
-				echo "${yellow}Using password list $filePath${reset}"
-				echo ""
-			else
-				echo "${red}$filePath is not a file! Skipping password cracking...${reset}"
+				echo "${yellow}WARNING: No wordlists found! Use the -f flag to specify a custom wordlist. Skipping password cracking...${reset}"
 				echo ""
 				capture=n
 			fi
-			sudo airmon-ng start $interfaceMon $channel > /dev/null
+		else
+			if [ -f $filePath ]; then
+				echo "${yellow}INFO: Using custom wordlist: $filePath${reset}"
+				echo ""
+			else
+				echo "${yellow}WARNING: $filePath is not a file! Skipping password cracking...${reset}"
+				echo ""
+				capture=n
+			fi
 		fi
-	else
-		sudo airmon-ng start $interfaceMon $channel > /dev/null
 	fi
 
 	# default de-auth requests is 1

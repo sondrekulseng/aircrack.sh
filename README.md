@@ -33,13 +33,13 @@ Options:
  -h: show help
  ```
  
- ## Screenshot
+## Screenshots
  
-### Main menu
+### Main menu:
 <img src="screenshots/main-menu.png"/>
 
-### Discover hidden network
+### Discover hidden networks:
 <img src="screenshots/scan.png"/>
 
-### Attack options
+### Attack options:
 <img src="screenshots/attack.png"/>

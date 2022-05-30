@@ -32,3 +32,6 @@ Options:
  -v: Verbose mode. Print out debug information, must be the last flag.
  -h: show help
  ```
+ 
+ ## Screenshot
+<img src="screenshots/main-menu.png"/>

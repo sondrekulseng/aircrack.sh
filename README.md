@@ -34,4 +34,12 @@ Options:
  ```
  
  ## Screenshot
+ 
+### Main menu
 <img src="screenshots/main-menu.png"/>
+
+### Discover hidden network
+<img src="screenshots/scan.png"/>
+
+### Attack options
+<img src="screenshots/attack.png"/>

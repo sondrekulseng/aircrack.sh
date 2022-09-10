@@ -50,6 +50,41 @@ verbose() {
 	echo ""
 }
 
+# Credit for progress animation: https://github.com/edouard-lopez/progress-bar.sh
+progress-bar() {
+	echo ""
+  local duration
+  local columns
+  local space_available
+  local fit_to_screen  
+  local space_reserved
+
+  space_reserved=6   # reserved width for the percentage value
+  duration=${scanTime::-1}
+  columns=$(tput cols)
+  space_available=$(( columns-space_reserved ))
+
+  if (( duration < space_available )); then 
+  	fit_to_screen=1; 
+  else 
+    fit_to_screen=$(( duration / space_available )); 
+    fit_to_screen=$((fit_to_screen+1)); 
+  fi
+
+  already_done() { for ((done=0; done<(elapsed / fit_to_screen) ; done=done+1 )); do printf "▇"; done }
+  remaining() { for (( remain=(elapsed/fit_to_screen) ; remain<(duration/fit_to_screen) ; remain=remain+1 )); do printf " "; done }
+  percentage() { printf "| %s%%" $(( ((elapsed)*100)/(duration)*100/100 )); }
+  clean_line() { printf "\r"; }
+
+  for (( elapsed=1; elapsed<=duration; elapsed=elapsed+1 )); do
+      already_done; remaining; percentage
+      sleep 1s
+      clean_line
+  done
+  clean_line
+  echo ""
+}
+
 while getopts 'hvi:f:' flag; do
   case "${flag}" in
   	h) showHelp ;;
@@ -128,14 +163,16 @@ start () {
 			scanTime="${time}s"
 		fi
 
-		if [ "$band" == "1" ]; then
-			echo "Scanning networks on 2.4GHz for $scanTime..."
-			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
-		else	
+		if [ "$band" == "2" ]; then
 			echo "Scanning networks on 5GHz for $scanTime..."
 			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon -b a
+		else	
+			echo "Scanning networks on 2.4GHz for $scanTime..."
+			screen -d -m sudo airodump-ng -w scan --output-format csv $interfaceMon
 		fi
-		sleep $scanTime
+
+		progress-bar
+
 		sudo killall screen
 		sed -i '1d' scan-01.csv
 		sed -i '1d' scan-01.csv
@@ -215,8 +252,8 @@ start () {
 		echo ""
 		echo "-- SELECT OPERATION --"
 		echo "[1] Monitor network"
-		echo "[2] De-auth entire network and crack Wi-Fi key"
-		echo "[3] De-auth one device on network and crack Wi-Fi key"
+		echo "[2] De-auth network and crack Wi-Fi key"
+		echo "[3] List connected clients and de-auth"
 		echo "[4] Quit to main menu"
 		echo ""
 		read -p "Select operation [1-4]: " choose
@@ -237,7 +274,9 @@ start () {
 			echo ""
 			echo "Scanning clients on $name for $scanTime"
 			screen -d -m sudo airodump-ng -c $channel -d $ap -w clients --output-format csv $interfaceMon
-			sleep $scanTime
+			
+			progress-bar
+
 			sudo killall screen
 			echo ""
 			echo "-- RESULT --"
@@ -248,7 +287,8 @@ start () {
 					if [ $length -gt 1 ]; then
 						sel=$((i-4))
 						client=${line:0:17}
-						echo [$sel] $client
+						vendor=$(grep ${client::-9} wordlists/mac-vendors.csv)
+						echo [$sel] $client - ${vendor:9}
 					else
 						break
 					fi

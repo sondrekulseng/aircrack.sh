@@ -121,15 +121,20 @@ monitorMode=$(sudo airmon-ng | grep -w $interfaceMon | wc -l)
 if [ "$monitorMode" == "0" ]
 	then
 	echo ""
-	echo "WARNING: Montior mode is not enabled for $interface"
-	read -p 'Enable monitor mode (y/n)? ' option1
+	echo "${yellow}WARNING: You must enable monitor mode to use aircrack.${reset}"
+	echo ""
+	read -p "Enable monitor mode for $interface (y/n)? " option1
 
 	if [ "$option1" == "y" ] || [ "$option1" == "Y" ]
-	then
-		echo ""
-		sudo airmon-ng start $interface
-		interfaceMon="${interface}mon"
+		then
+			echo ""
+			sudo airmon-ng start $interface
+			interfaceMon="${interface}mon"
+	else
+			echo "Quitting..."
+			exit
 	fi
+
 else
 	echo "${green}MONITOR MODE ENABLED: $interfaceMon${reset}"
 fi
